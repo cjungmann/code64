@@ -60,7 +60,11 @@ void explicit_conversion_demo(const char *str)
 
    while(ptr_in < ptr_end)
    {
-      const char *result = c64_encode_to_pointer(ptr_in, ptr_out);
+      int count = ptr_end - ptr_in;
+      if (count > 3)
+         count = 0;
+
+      const char *result = c64_encode_to_pointer(ptr_in, count, ptr_out);
 
       ++ptr_out;
       ptr_in += 3;
