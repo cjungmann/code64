@@ -14,7 +14,7 @@ size_t c64_decode_chars_needed(size_t input_size);
 size_t c64_encode_uint32s_needed(size_t input_size);
 
 /** Functions to perform conversions of the smallest portion the input. */
-const char *c64_encode_to_pointer(const char *input, uint32_t *buff_var);
+const char *c64_encode_to_pointer(const char *input, int count, uint32_t *buff_var);
 int c64_decode_to_pointer(const char *input, uint32_t *buff_var);
 
 /** Encoding functions that convert the entire input **/

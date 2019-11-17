@@ -112,10 +112,10 @@ size_t c64_decode_uint32s_needed(size_t input_size)
  * I am insisting on using uint32 for the output buffer to take
  * advantage, however small, of using integer-aligned variables.
  */
-const char *c64_encode_to_pointer(const char *input, uint32_t *buff_var)
+const char *c64_encode_to_pointer(const char *input, int count, uint32_t *buff_var)
 {
    const unsigned char *ptr = (const unsigned char*)input;
-   const unsigned char *end = ptr + 3;
+   const unsigned char *end = ptr + count;
    unsigned char working = 0;
 
    int shifts[3] = { 2, 4, 6 };
@@ -126,7 +126,7 @@ const char *c64_encode_to_pointer(const char *input, uint32_t *buff_var)
    // Preload buffer with "\0\0==" to in case of short input (less than 3 characters)
    *buff_var = *(uint32_t*)"\0\0==";
 
-   while (*ptr && ptr < end)
+   while (ptr < end)
    {
       // Append truncated part of current byte to left-over bits from last pass:
       working |= (*ptr >> *shift);
@@ -145,7 +145,7 @@ const char *c64_encode_to_pointer(const char *input, uint32_t *buff_var)
       ++output_buff;
    }
 
-   if (*(ptr-1))
+   if (ptr > (const unsigned char *)input)
       *output_buff = byte_encode(working);
    
    return (const char *)buff_var;
@@ -210,7 +210,11 @@ void c64_encode_to_callback(const char *input, size_t len_input, Encode_User use
 
    while(ptr_in < ptr_end)
    {
-      const char *result = c64_encode_to_pointer(ptr_in, ptr_out);
+      int count = ptr_end - ptr_in;
+      if (count > 3)
+         count = 3;
+
+      const char *result = c64_encode_to_pointer(ptr_in, count, ptr_out);
 
       ++ptr_out;
       ptr_in += 3;
@@ -242,7 +246,10 @@ void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer,
 
    while(ptr_in < in_end && ptr_out < end_out )
    {
-      const char *result = c64_encode_to_pointer(ptr_in, ptr_out);
+      int count = in_end - ptr_in;
+      if (count > 3)
+         count = 3;
+      const char *result = c64_encode_to_pointer(ptr_in, count, ptr_out);
 
       ++ptr_out;
       ptr_in += 3;
@@ -265,7 +272,7 @@ void c64_encode_stream_to_stream(FILE *in, FILE *out, int breaks)
    while ((bytes_read = fread((void*)&reading, 1, 3, in)) > 0)
    {
       total_read += bytes_read;
-      c64_encode_to_pointer((const char*)&reading, &working);
+      c64_encode_to_pointer((const char*)&reading, bytes_read, &working);
 
       bytes_written = fwrite((void*)&working, 1, 4, out);
 
@@ -364,7 +371,7 @@ void c64_decode_stream_to_stream(FILE *in, FILE *out)
    {
       total_read += bytes_read;
       c64_decode_to_pointer((const char*)&reading, &working);
-      bytes_written = fwrite((void*)&working, 1, 4, out);
+      bytes_written = fwrite((void*)&working, 1, 3, out);
       total_written += bytes_written;
 
       reading = 0;
