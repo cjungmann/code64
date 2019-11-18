@@ -8,10 +8,15 @@
 
 #include "code64.h"
 
+char digits[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+char digit62 = '+';
+char digit63 = '/';
+char padding_char = '=';
+
 char byte_encode(unsigned int val)
 {
    assert(val < 64);
-   const static char digits[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
    return digits[val];
 }
 
@@ -23,11 +28,11 @@ unsigned char digit_decode(char digit)
       return digit - 'a' + 26;
    else if (digit >= '0' && digit <= '9')
       return digit - '0' + 52;
-   else if (digit == '+')
+   else if (digit == digit62)
       return 62;
-   else if (digit == '/')
+   else if (digit == digit63)
       return 63;
-   else if (digit == '=')
+   else if (digit == padding_char)
       return '\0';
    else
    {
@@ -37,17 +42,62 @@ unsigned char digit_decode(char digit)
 }
 
 /**
- * @brief Return length of encoding string with padding characters removed.
+ * @brief Function to remap special encoding characters.
  *
- * The true length of a decoding string depends on the length of
- * the data portion of the encoded input string.
- * 
+ * The first 62 encoding (indexed 0-61) characters are obvious and easy
+ * to assign.  The first 52 characters are two runs through the roman
+ * alphabet, first in upper case, then in lower case.  The 52 are followed
+ * by 10 decimal digits, 0 through 9, making 62 total obvious digits.
+ *
+ * The standard special characters are '+' and '/' for the two final
+ * digits that brings the count to 64, the full capacity for a 6-bit
+ * value.  When encodings include padding characters to indicate an
+ * sparse final 3-byte set, the padding character is usually '='.
+ * Some encoding standards change the padding character in addition
+ * to the base64 digits.
+ *
+ * Some applications use different special characters.  A URL string
+ * cannot include a slash and interprets a '+' as a space, so **base64url**
+ * encoding replaces '+' with '-' and '/' with '_'.
+ *
+ * The padding character is usually '=' and required, but some encodings
+ * change this.  A '=' in a URL may confuse some URL parsers, so the '='
+ * is optional in **base64url**, as well as some others.  In that case,
+ * set the **charpad** parameter to '\0'.
  */
-size_t c64_encoding_length(const char *input)
+void c64_set_special_chars(char char62, char char63, char charpad)
+{
+   assert(char62 && char63);
+
+   digits[62] = digit62 = char62;
+   digits[63] = digit63 = char63;
+   padding_char = charpad;
+}
+
+/**
+ * @brief Return length to last character of an encoded string.
+ *
+ * The returned value is a worst-case scenario, the actual encoded
+ * characters may well be less than what this function returns.
+ *
+ * While whitespace in input strings are ignored and not decoded,
+ * the whitespace characters are included in the count of characters
+ * to the end of the input string to ensure all significant
+ * characters are decoded.
+ */
+size_t c64_decoding_length(const char *input)
 {
    size_t len = strlen(input);
-   while ( input[len-1] == '=' )
+
+   /* // Alternate implementation, trimming any non-base64 */
+   /* // digit from the right of the string. */
+   /* while ( !strchr(digits, input[len-1]) ) */
+   /*    --len; */
+
+   // Standard implementation, only trim padding character:
+   while ( input[len-1] == padding_char )
       --len;
+
    return len;
 }
 
@@ -123,8 +173,8 @@ const char *c64_encode_to_pointer(const char *input, int count, uint32_t *buff_v
 
    char *output_buff = (char*)buff_var;
 
-   // Preload buffer with "\0\0==" to in case of short input (less than 3 characters)
-   *buff_var = *(uint32_t*)"\0\0==";
+   /* // Preload buffer with "\0\0==" to in case of short input (less than 3 characters) */
+   /* *buff_var = *(uint32_t*)"\0\0=="; */
 
    while (ptr < end)
    {
@@ -145,8 +195,16 @@ const char *c64_encode_to_pointer(const char *input, int count, uint32_t *buff_v
       ++output_buff;
    }
 
+   // If any characters where processed, the final encoded
+   // character must be set after the loop exits.
    if (ptr > (const unsigned char *)input)
       *output_buff = byte_encode(working);
+
+   while (count < 3)
+   {
+      *++output_buff = padding_char;
+      ++count;
+   }
    
    return (const char *)buff_var;
 }
@@ -286,7 +344,7 @@ void c64_encode_stream_to_stream(FILE *in, FILE *out, int breaks)
 
 void c64_decode_to_callback(const char *input, Decode_User user)
 {
-   size_t in_len = c64_encoding_length(input);
+   size_t in_len = c64_decoding_length(input);
 
    const char *in_end = input + in_len;
 
@@ -312,7 +370,7 @@ void c64_decode_to_callback(const char *input, Decode_User user)
 
 void c64_decode_to_buffer(const char *input, char *buffer, size_t len)
 {
-   size_t in_len = c64_encoding_length(input);
+   size_t in_len = c64_decoding_length(input);
    const char *in_end = input + in_len;
 
    assert(len >= c64_decode_chars_needed(in_len));
