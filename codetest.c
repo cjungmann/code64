@@ -140,6 +140,33 @@ void explicit_conversion_test(void)
    explicit_conversion_demo("any carnal pleasur");
 }
 
+void test_allowing_invalid_encode_chars(void)
+{
+   const char *strings[] = {
+   "YW55IGNhcm5hbCB@#w  bG&*Vhc3VyZS4=",
+   "YW55IGNhc\tm5hbCBwbGVhc3VyZQ==",
+   "YW55IGNhcm5hbCBwbGVhc3Vy",
+   NULL
+   };
+
+   const char **ptr = strings;
+   char buff[128];    // Much too long buffer, but efficiency isn't important here.
+   
+   printf("\n\nSome valid encoded strings may include invalid characters.\n");
+   printf("This test confirms that the decoder appropriately ignored them.\n");
+
+   while (*ptr)
+   {
+      // Zero memory to effectively set the \0 string terminator character:
+      memset((void*)&buff, 0, sizeof(buff));
+
+      c64_decode_to_buffer( *ptr, buff, sizeof(buff) );
+      printf("[44;1m%s[m converts to [44;1m%s[m.\n", *ptr, buff);
+
+      ++ptr;
+   }
+}
+
 void test_decode_chars_needed(void)
 {
    const char *strings[]  = {
@@ -245,14 +272,15 @@ void encode_to_buffer_test(const char *str)
 
 void run_tests(void)
 {
-   prediction_test();
+   /* prediction_test(); */
    /* explicit_conversion_test(); */
    /* c64_encode_to_callback(buff_quote, strlen(buff_quote), leviathan_quote_test); */
    /* encode_to_buffer_test(buff_quote); */
 
-   test_decode_chars_needed();
+   /* test_decode_chars_needed(); */
    /* test_decoding(); */
    /* c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string); */
+   test_allowing_invalid_encode_chars();
 
 }
 
@@ -348,7 +376,11 @@ int main(int argc, const char **argv)
          ++ptr;
       }
 
-      if ( operation == None)
+      if (tests_flag)
+      {
+         run_tests();
+      }
+      else if ( operation == None)
       {
          fprintf(stderr, "Don't know what to do.\n\n");
          show_usage();
@@ -356,11 +388,7 @@ int main(int argc, const char **argv)
       }
       else
       {
-         if (tests_flag)
-         {
-            run_tests();
-         }
-         else if (in_filename)
+         if (in_filename)
          {
             fin = fopen(in_filename, "r");
             if (fin)
