@@ -173,7 +173,7 @@ void test_decode_chars_needed(void)
       memset((void*)encode_buffer, 0, sizeof(encode_buffer));
       memset((void*)decode_buffer, 0, sizeof(decode_buffer));
 
-      len_input = c64_encoding_length(*ptr);
+      len_input = c64_decoding_length(*ptr);
       calc_encoded = c64_encode_chars_needed(len_input);
       c64_encode_to_buffer(*ptr, len_input, encode_buffer, sizeof(encode_buffer));
 
@@ -285,6 +285,7 @@ int main(int argc, const char **argv)
    FILE *fout = NULL;
    FILE *fin_using = stdin;
    FILE *fout_using = stdout;
+   int tests_flag = 0;
 
    enum ops operation = None;
 
@@ -325,9 +326,17 @@ int main(int argc, const char **argv)
                      ++count;
                      out_filename = *ptr;
                      break;
+                  case 's':
+                     ++ptr;
+                     ++count;
+                     if (strlen(*ptr) < 2)
+                        fprintf(stderr, "Special characters string too short.\n");
+                     else
+                        c64_set_special_chars((*ptr)[0], (*ptr)[1], (*ptr)[2]);
+                     break;
                   case 't':
-                     run_tests();
-                     return 0;
+                     tests_flag = 1;
+                     break;
                   default:
                      show_usage();
                      return 1;
@@ -347,7 +356,11 @@ int main(int argc, const char **argv)
       }
       else
       {
-         if (in_filename)
+         if (tests_flag)
+         {
+            run_tests();
+         }
+         else if (in_filename)
          {
             fin = fopen(in_filename, "r");
             if (fin)
