@@ -41,6 +41,16 @@ unsigned char digit_decode(char digit)
    }
 }
 
+int is_valid_encode_char(int val)
+{
+   if (val == padding_char)
+      return 1;
+   else if (strchr(digits, val)!=NULL)
+      return 1;
+   else
+      return 0;
+}
+
 /**
  * @brief Function to remap special encoding characters.
  *
@@ -148,6 +158,70 @@ size_t c64_decode_uint32s_needed(size_t input_size)
    input_size *= 3;
    return input_size / 4 + ((input_size % 4)>0);
 }
+
+/**
+ * @brief Decoding utility function that discards unrecognized characters
+ *        (characters that are neither base64 digits or the padding character)
+ *        wwhile filling an input buffer.
+ */
+int read_but_skip_invalid(FILE *in, void* buffer, size_t len)
+{
+   size_t bread=0, tread=0;
+   char *buff = (char*)buffer;
+   char *cur;
+
+   while (tread < len)
+   {
+      cur = &buff[tread];
+      bread = fread(cur, 1, 1, in);
+      if (bread)
+      {
+         if (is_valid_encode_char(*cur))
+         {
+            ++cur;
+            ++tread;
+         }
+      }
+      else
+         break;
+   }
+
+   return tread;
+}
+
+/**
+ * @brief Encoded chars reader that discards invalid characters while filling a buffer for decoding.
+ *
+ * @param input      A pointer to a null-terminated string of encoded characters.
+ *
+ * @param buffer     A character buffer in which to write compressed encoded
+ *                   string, having had the invalid characters removed.
+ *
+ * @param buffer_len number of characters in buffer.  This value should be 5,
+ *                   up to four significant digits, including a terminating null.
+ *
+ * @return Number of chars considered, invalid or not.  Advance the input buffer
+ *         by this number of characters to continue decoding.
+ */
+int scan_but_skip_invalid(const char *input, char* buffer, size_t buffer_len)
+{
+   const char *ptr_input = input;
+   size_t tread=0;
+   char *buff = (char*)buffer;
+
+   while ( (tread < buffer_len-1) && *ptr_input)
+   {
+      if (is_valid_encode_char(*ptr_input))
+         buff[tread++] = *ptr_input;
+
+      ++ptr_input;
+   }
+
+   buffer[tread] = '\0';
+
+   return ptr_input - input;
+}
+
 
 /**
  * @brief The function that does the actual encoding.
@@ -319,6 +393,14 @@ void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer,
    *ptr_out = 0;
 }
 
+/**
+ * @brief Source and target are FILE streams.
+ *
+ * The inspiration for this function is to support the use of this
+ * library with a command-line program that can supply the input
+ * from stdin or a named file, with output, likewise, going to stdout
+ * or another named file.
+ */
 void c64_encode_stream_to_stream(FILE *in, FILE *out, int breaks)
 {
    uint32_t reading = 0;
@@ -342,6 +424,9 @@ void c64_encode_stream_to_stream(FILE *in, FILE *out, int breaks)
    }
 }
 
+/**
+ * @brief Decode encoded string to stack-based buffer, which is sent to callback function.
+ */
 void c64_decode_to_callback(const char *input, Decode_User user)
 {
    size_t in_len = c64_decoding_length(input);
@@ -352,22 +437,27 @@ void c64_decode_to_callback(const char *input, Decode_User user)
    char *out_buff = (char*)alloca(out_len);
    char *out_ptr = out_buff;
    uint32_t working;
+   char encoded_buffer[5];
 
    const char *ptr = input;
    while(ptr < in_end)
    {
-      if (!c64_decode_to_pointer(ptr, &working))
+      ptr += scan_but_skip_invalid(ptr, encoded_buffer, sizeof(encoded_buffer));
+
+      if (!c64_decode_to_pointer(encoded_buffer, &working))
          break;
 
       memcpy(out_ptr, (void*)&working, 3);
 
-      ptr += 4;
       out_ptr += 3;
    }
 
    (*user)((const void*)out_buff, out_len);
 }
 
+/**
+ * @brief Decode encoded string to caller-provided buffer, which can be used upon return.
+ */
 void c64_decode_to_buffer(const char *input, char *buffer, size_t len)
 {
    size_t in_len = c64_decoding_length(input);
@@ -377,45 +467,29 @@ void c64_decode_to_buffer(const char *input, char *buffer, size_t len)
 
    char *out_ptr = buffer;
    uint32_t working;
+   char encoded_buffer[5];
 
    const char *ptr = input;
    while(ptr < in_end)
    {
-      if (!c64_decode_to_pointer(ptr, &working))
+      ptr += scan_but_skip_invalid(ptr, encoded_buffer, sizeof(encoded_buffer));
+
+      if (!c64_decode_to_pointer(encoded_buffer, &working))
          break;
 
       memcpy(out_ptr, (void*)&working, 3);
 
-      ptr += 4;
       out_ptr += 3;
    }
 }
-
-int read_but_skip_whitespace(FILE *in, void* buffer, size_t len)
-{
-   size_t bread=0, tread=0;
-   char *buff = (char*)buffer;
-   char *cur;
-
-   while (tread < len)
-   {
-      cur = &buff[tread];
-      bread = fread(cur, 1, 1, in);
-      if (bread)
-      {
-         if (!isspace(*cur))
-         {
-            ++cur;
-            ++tread;
-         }
-      }
-      else
-         break;
-   }
-
-   return tread;
-}
-
+/**
+ * @brief Source and target are FILE streams.
+ *
+ * The inspiration for this function is to support the use of this
+ * library with a command-line program that can supply the input
+ * from stdin or a named file, with output, likewise, going to stdout
+ * or another named file.
+ */
 void c64_decode_stream_to_stream(FILE *in, FILE *out)
 {
    uint32_t reading = 0;
@@ -424,7 +498,7 @@ void c64_decode_stream_to_stream(FILE *in, FILE *out)
 
    size_t bytes_read, bytes_written;
 
-   while ((bytes_read = read_but_skip_whitespace(in, (void*)&reading, sizeof(reading))))
+   while ((bytes_read = read_but_skip_invalid(in, (void*)&reading, sizeof(reading))))
    /* while ((bytes_read = fread((void*)&reading, 1, 4, in)) > 0) */
    {
       total_read += bytes_read;
