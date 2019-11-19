@@ -6,7 +6,7 @@
 #include <alloca.h>
 #include <stdlib.h>   // for malloc()
 
-#include "code64.h"
+#include "libcode64.h"
 
 /**
  * The two following strings were copied from https://en.wikipedia.org/wiki/Base64.
@@ -272,156 +272,20 @@ void encode_to_buffer_test(const char *str)
 
 void run_tests(void)
 {
-   /* prediction_test(); */
-   /* explicit_conversion_test(); */
-   /* c64_encode_to_callback(buff_quote, strlen(buff_quote), leviathan_quote_test); */
-   /* encode_to_buffer_test(buff_quote); */
+   prediction_test();
+   explicit_conversion_test();
+   c64_encode_to_callback(buff_quote, strlen(buff_quote), leviathan_quote_test);
+   encode_to_buffer_test(buff_quote);
 
-   /* test_decode_chars_needed(); */
-   /* test_decoding(); */
-   /* c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string); */
+   test_decode_chars_needed();
+   test_decoding();
+   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string);
    test_allowing_invalid_encode_chars();
 
 }
 
-void show_usage(void)
-{
-   printf("-b to encode file WITH breaks.\n");
-   printf("-d to decode file.\n");
-   printf("-e to encode file without breaks.\n");
-   printf("-i filename Read filename instead of reading stdin for input.\n");
-   printf("-o filename Write to filename instead to stdout.\n");
-   printf("-t to run tests.\n");
-}
-
-void close_FILEs(FILE *file1, FILE *file2)
-{
-   if (file1 != NULL)
-      fclose(file1);
-   if (file2 != NULL)
-      fclose(file2);
-}
-
-
 int main(int argc, const char **argv)
 {
-   enum ops { None, Encode, Decode };
-   int breaks = 0;
-   const char *in_filename = NULL;
-   const char *out_filename = NULL;
-   FILE *fin = NULL;
-   FILE *fout = NULL;
-   FILE *fin_using = stdin;
-   FILE *fout_using = stdout;
-   int tests_flag = 0;
-
-   enum ops operation = None;
-
-   if (argc == 1)
-   {
-      show_usage();
-   }
-   else
-   {
-      const char **ptr = argv;
-      int count = 0;
-      while (count < argc)
-      {
-         if (count)
-         {
-            if (**ptr == '-')
-            {
-               switch((*ptr)[1])
-               {
-                  case 'b':
-                     breaks = 1;
-                     operation = Encode;
-                     break;
-                  case 'd':
-                     operation = Decode;
-                     break;
-                  case 'e':
-                     breaks = 0;
-                     operation = Encode;
-                     break;
-                  case 'i':
-                     ++ptr;
-                     ++count;
-                     in_filename = *ptr;
-                     break;
-                  case 'o':
-                     ++ptr;
-                     ++count;
-                     out_filename = *ptr;
-                     break;
-                  case 's':
-                     ++ptr;
-                     ++count;
-                     if (strlen(*ptr) < 2)
-                        fprintf(stderr, "Special characters string too short.\n");
-                     else
-                        c64_set_special_chars((*ptr)[0], (*ptr)[1], (*ptr)[2]);
-                     break;
-                  case 't':
-                     tests_flag = 1;
-                     break;
-                  default:
-                     show_usage();
-                     return 1;
-               }
-            }
-         }
-
-         ++count;
-         ++ptr;
-      }
-
-      if (tests_flag)
-      {
-         run_tests();
-      }
-      else if ( operation == None)
-      {
-         fprintf(stderr, "Don't know what to do.\n\n");
-         show_usage();
-         return 1;
-      }
-      else
-      {
-         if (in_filename)
-         {
-            fin = fopen(in_filename, "r");
-            if (fin)
-               fin_using = fin;
-            else
-            {
-               fprintf(stderr, "Failed to open input file \"%s\" (%s).\n", in_filename, strerror(errno));
-               close_FILEs(fin, fout);
-               return 1;
-            }
-         }
-
-         if (out_filename)
-         {
-            fout = fopen(out_filename, "w");
-            if (fout)
-               fout_using = fout;
-            else
-            {
-               fprintf(stderr, "Failed to open out file \"%s\" (%s).\n", out_filename, strerror(errno));
-               close_FILEs(fin, fout);
-               return 1;
-            }
-         }
-      }
-
-      if (operation == Encode)
-         c64_encode_stream_to_stream(fin_using, fout_using, breaks);
-      else if (operation == Decode)
-         c64_decode_stream_to_stream(fin_using, fout_using);
-
-      close_FILEs(fin, fout);
-   }
-
+   run_tests();
    return 0;
 }
