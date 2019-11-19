@@ -1,0 +1,124 @@
+.TH code64 1 "19 November 2019" "Version 1.0"
+
+.SH NAME
+code64 Base64 Encoder/Decoder
+
+.SH SYNOPSIS
+.B code64
+.RI [ OPTIONS ] " " [ FILE ]
+
+.SH DESCRIPTION
+The \fBcode64\fR utility converts data to and from base64 encoding.
+
+The source can be \fIstdin\fR or a filename, and the target can be
+\fIstdout\fR or a filename.  The first non-option argument will be
+taken as the input file, otherwise the input will be from \fIstdin\fR.
+The output will be written to \fIstdout\fR unless the \fB-o\fR
+option is used.
+
+By default, the characters used for values 62 and 63 are '\fI+\fR'
+and '\fI/\fR', and the padding character is '\fI=\fR'.  These characters
+can be changed with options.
+
+.SH OVERVIEW
+The
+.Nm
+utility converts data to and from base64 encoding.  This encoding is
+widely used to transmit files and data over the internet.  During
+encoding, every 3 8-bit bytes of input is converted to 4 6-bit bytes
+of output.  The 6-bit variables represent values from 0 to 63, and
+these values are represented by two runs of the roman alphabet, first
+in upper case, then lower case, then the 10 numeric digits, 0-9.
+This covers the first 62 possible values for a 6-bit value.  That
+leaves 2 values unaccounted-for, 62 and 63.
+
+In most cases, 62 and 63 are replaced with '\fI+\fR' and '\fI/\fR',
+but there are exceptions.  URLs, for example, have specific
+interpretations for the '\fI+\fR', which stands in for a space, and
+'\fI/\fR' which normally indicates directory hierachy.  
+
+
+.SH OPTIONS
+.TP
+.BI -b " line break length "
+.br
+Use this option to set the maximum line length of the encoded output.
+The value will be coerced to the highest multiple of 4 that is equal
+to or less than the requested line length.  A line break length of \fI0\fR
+will omit all line breaks in the output.  The default value is \fI76\fR.
+
+.TP
+.BI -c " string"
+.br
+This option will set the special characters for values 62 and 63 and
+for padding.  The string must be at least 2 characters long.  If the
+string is 3 characters long, the third character will be used as a
+padding character, if needed.  Otherwise, no padding will be used
+when the final encoding group is less than 3 bytes long.
+
+.TP
+.BI -d
+.br
+Decode the input file
+
+.TP
+.BI -e
+.br
+Encode the input file
+
+.TP
+.BI -h
+.br
+Present a short help page.
+
+.TP
+.BI -i " input_file"
+.br
+Read from \fIinput_file\fR for encoding input instead of \fIstdin\fR.
+
+.TP
+.BI -o " output_file"
+.br
+Write the encoded results to \fIoutput_file\fR instead of \fIstdout\fR.
+
+.TP
+.BI -s " standard_name"
+.br
+This option serves as a shortcut to set the special characters and line
+break length based on the intended standard invoked.
+
+By default, \fBcode64\fR uses the \fIMIME\fR standard, using '\fI+\fR'
+and '\fI/\fR' for values 62 and 63, '\fI=\fR' for padding, and a
+maximum line length of 76 characters.
+
+The supported standards are:
+.br
+- pem
+.br
+- mime
+.br
+- rfc4648
+.br
+- base64url
+.br
+- radix64
+.br
+- utf-7
+.br
+- imap
+.br
+- y64
+.br
+- freenet
+
+
+
+
+.SH EXAMPLES
+
+.SH AUTHOR
+.SH SEE ALSO
+.TP
+.BR code64 (3), base64
+
+

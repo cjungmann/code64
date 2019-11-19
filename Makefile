@@ -5,8 +5,14 @@ LOCAL_LINK = -Wl,-R -Wl,. -lcode64
 
 CFLAGS = -Wall -Werror -m64 -ggdb -I. -fPIC -shared
 
-
 CC = cc
+
+define install_man_pages
+	cp code64.1  /usr/share/man/man1
+	gzip -f      /usr/share/man/man1/code64.1
+	cp code64.3  /usr/share/man/man3
+	gzip -f      /usr/share/man/man3/code64.3
+endef
 
 debug : BASEFLAGS += -ggdb -DDEBUG
 
@@ -28,6 +34,7 @@ install :
 	install -D --mode=755 libcode64.so /usr/lib
 	install -D --mode=755 libcode64.h  /usr/local/include
 	install -D --mode=755 code64       /usr/local/bin
+	$(call install_man_pages)
 
 uninstall :
 	rm -f /usr/lib/libcode64.so
