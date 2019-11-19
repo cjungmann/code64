@@ -1,4 +1,4 @@
-// -*- compile-command: "cc -Wall -Werror -O3 -I . -L. -o code64 code64.c  -Wl,-R -Wl,. -lcode64" -*-
+// -*- compile-command: "cc -Wall -Werror -O -I . -L. -o code64 code64.c  -Wl,-R -Wl,. -lcode64" -*-
 
 #include <stdio.h>
 #include <stdlib.h>   // for atoi();
@@ -7,15 +7,49 @@
 
 #include "libcode64.h"
 
+typedef struct _Std_Type
+{
+   const char *name;
+   const char *specials;
+   unsigned int breaks;
+} Std_Type;
+
+Std_Type bstypes[9] = {
+   { "pem",       "+/=",  64 },
+   { "mime",      "+/=",  76 },
+   { "rfc4648",   "+/=",   0 },
+   { "base64url", "-_",    0 },
+   { "radix64",   "+/=",  76 },
+   { "utf-7",     "+/",    0 },
+   { "imap",      "+,",    0 },
+   { "y64",       "._-",   0 },
+   { "freenet",   "~-=",   0 }
+};
+
+unsigned int number_of_bstypes = sizeof(bstypes) / sizeof(Std_Type);
+
+void show_standards(void)
+{
+   const Std_Type *ptr = bstypes;
+   for (unsigned int i=0; i < number_of_bstypes; ++i)
+   {
+      printf("   %s\n", ptr->name);
+      ++ptr;
+   }
+}
+
 void show_usage(void)
 {
-   printf("-b to encode file WITH breaks.\n");
+   printf("-b line length  Number of characters per line in encoded output.\n");
    printf("-c set custom special characters.\n");
    printf("-d to decode file.\n");
    printf("-e to encode file without breaks.\n");
    printf("-h *help* to show usage (this display).\n");
    printf("-i filename Read filename instead of reading stdin for input.\n");
    printf("-o filename Write to filename instead to stdout.\n");
+   printf("-s standard to use for special characters, padding, and line length.\n");
+   printf("   The following standards are recognized:\n");
+   show_standards();
 }
 
 void close_FILEs(FILE *file1, FILE *file2)
@@ -24,6 +58,30 @@ void close_FILEs(FILE *file1, FILE *file2)
       fclose(file1);
    if (file2 != NULL)
       fclose(file2);
+}
+
+int set_special_chars_from_string(const char *str)
+{
+   if (strlen(str) > 1)
+   {
+      c64_set_special_chars(str);
+      return 1;
+   }
+   else
+      return 0;
+}
+
+const Std_Type* get_standard(const char *sname)
+{
+   const Std_Type *ctype = bstypes;
+
+   for (unsigned int i=0; i < number_of_bstypes; ++i)
+   {
+      if (0 == strcmp(ctype->name, sname))
+         return ctype;
+      ++ctype;
+   }
+   return 0;
 }
 
 /**
@@ -65,6 +123,8 @@ int main(int argc, const char **argv)
    FILE *fin = NULL;
    FILE *fout = NULL;
 
+   const Std_Type *selected_stype = NULL;
+
    enum ops operation = Encode;
    int breaks = 76;
 
@@ -99,10 +159,8 @@ int main(int argc, const char **argv)
                   case 'c':
                      ++ptr;
                      ++count;
-                     if (strlen(*ptr) < 2)
+                     if (!set_special_chars_from_string(*ptr))
                         fprintf(stderr, "Special characters string too short.\n");
-                     else
-                        c64_set_special_chars((*ptr)[0], (*ptr)[1], (*ptr)[2]);
                      break;
                   case 'd':
                      operation = Decode;
@@ -122,6 +180,17 @@ int main(int argc, const char **argv)
                      ++ptr;
                      ++count;
                      out_filename = *ptr;
+                     break;
+                  case 's':
+                     ++ptr;
+                     ++count;
+                     if ((selected_stype = get_standard(*ptr)))
+                     {
+                        set_special_chars_from_string(selected_stype->specials);
+                        breaks = selected_stype->breaks;
+                     }
+                     else
+                        fprintf(stderr, "Unrecognized standard name '%s'.\n", *ptr);
                      break;
                   default:
                      show_usage();
