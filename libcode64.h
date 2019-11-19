@@ -4,7 +4,7 @@ typedef void (*Encode_User)(const char *encoded_content);
 typedef void (*Decode_User)(const void *decoded_content, size_t data_length);
 
 /** Replace special encoding characters '+', '/', and '=' with alternates. */
-void c64_set_special_chars(char char62, char char63, char charpad);
+void c64_set_special_chars(const char *special_chars);
 
 /** Returns length of right-trimmed input string. */
 size_t c64_decoding_length(const char *input);
@@ -23,7 +23,7 @@ int c64_decode_to_pointer(const char *input, uint32_t *buff_var);
 /** Encoding functions that convert the entire input **/
 void c64_encode_to_callback(const char *input, size_t len_input, Encode_User user);
 void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer, int bufflen);
-void c64_encode_stream_to_stream(FILE *in, FILE *out, int breaks);
+void c64_encode_stream_to_stream(FILE *in, FILE *out, unsigned int breaks);
 
 /** Decoding functions that convert the entire input **/
 void c64_decode_to_callback(const char *input, Decode_User user);

@@ -6,7 +6,7 @@
 
 #include <ctype.h>    // for isspace
 
-#include "code64.h"
+#include "libcode64.h"
 
 char digits[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -73,15 +73,20 @@ int is_valid_encode_char(int val)
  * The padding character is usually '=' and required, but some encodings
  * change this.  A '=' in a URL may confuse some URL parsers, so the '='
  * is optional in **base64url**, as well as some others.  In that case,
- * set the **charpad** parameter to '\0'.
+ * submit a 2-character string.
+ *
+ * @param special_chars  A 2- or 3-character string containing the
+ *                       characters to be used for binary values of
+ *                       62 and 63, and optionally, the third character
+ *                       is to be used as the padding character for
+ *                       incomplete byte triads.
  */
-void c64_set_special_chars(char char62, char char63, char charpad)
+void c64_set_special_chars(const char* special_chars)
 {
-   assert(char62 && char63);
-
-   digits[62] = digit62 = char62;
-   digits[63] = digit63 = char63;
-   padding_char = charpad;
+   assert(strlen(special_chars) > 1);
+   digits[62] = digit62 = special_chars[0];
+   digits[63] = digit63 = special_chars[1];
+   padding_char = special_chars[2];
 }
 
 /**
@@ -400,8 +405,13 @@ void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer,
  * library with a command-line program that can supply the input
  * from stdin or a named file, with output, likewise, going to stdout
  * or another named file.
+ *
+ * @param in      FILE stream pointer for input file.
+ * @param out     FILE stream pointer for output file.
+ * @param breaks  Characters to print per line.  Must be 0 or multiple of 4.
+ *                Values outside of restrictions will print unbalanced lines.
  */
-void c64_encode_stream_to_stream(FILE *in, FILE *out, int breaks)
+void c64_encode_stream_to_stream(FILE *in, FILE *out, unsigned int breaks)
 {
    uint32_t reading = 0;
    uint32_t working;
@@ -417,7 +427,8 @@ void c64_encode_stream_to_stream(FILE *in, FILE *out, int breaks)
       bytes_written = fwrite((void*)&working, 1, 4, out);
 
       total_written += bytes_written;
-      if (breaks && total_written && (total_written % 76)==0 )
+
+      if (breaks && total_written && (total_written % breaks)==0 )
          fwrite((void*)"\r\n", 1, 2, out);
 
       reading = 0;
