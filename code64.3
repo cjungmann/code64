@@ -2,6 +2,17 @@
 .SH NAME
 libcode64 Base64 Encoder/Decoder Library
 
+.SH SYNOPSIS
+.SY
+.EX
+#include <code64.h>
+
+void c64_encode_to_callback(const char *input, size_t len_input, Encode_User user);
+void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer, int bufflen);
+void c64_encode_stream_to_stream(FILE *in, FILE *out, unsigned int breaks);
+.EE
+.YS
+
 .SH DESCRIPTION
 \fBlibcode64.so\fR is a shared-object library that is used to
 encode and decode data using \fIbase64\fR encoding.
