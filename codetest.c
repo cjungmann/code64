@@ -45,9 +45,9 @@ void show_decoded_string(const void* result, size_t data_length)
 void explicit_conversion_demo(const char *str)
 {
    size_t len_input = strlen(str);
-   size_t uint32s_needed = c64_encode_uint32s_needed(len_input);
+   size_t encoding_len = c64_encode_chars_needed(len_input);
 
-   uint32_t *buffer = (uint32_t*)alloca(uint32s_needed * sizeof(uint32_t));
+   uint32_t *buffer = (uint32_t*)alloca(encoding_len);
 
    if (((intptr_t)buffer % 4) == 0)
       printf("The array is 32-bit integer aligned.\n");
@@ -257,13 +257,12 @@ void leviathan_quote_test(const char *result)
 void encode_to_buffer_test(const char *str)
 {
    size_t str_len = strlen(str);
-   size_t ints_len = c64_encode_uint32s_needed(str_len);
-   uint32_t *buffer = (uint32_t*)malloc(ints_len * sizeof(uint32_t));
+   size_t encoded_len = c64_encode_chars_needed(str_len);
+   uint32_t *buffer = (uint32_t*)malloc(encoded_len);
 
-   printf("\n[33;1mBeginning encode_to_buffer_test with %lu-length buffer for a %lu-length string..[m\n", ints_len, str_len);
+   printf("\n[33;1mBeginning encode_to_buffer_test with %lu-length buffer for a %lu-length string..[m\n", encoded_len, str_len);
 
-
-   c64_encode_to_buffer(str, str_len, buffer, ints_len);
+   c64_encode_to_buffer(str, str_len, buffer, encoded_len);
 
    printf ("[32;1m%s[m\n", (const char*)buffer);
 
