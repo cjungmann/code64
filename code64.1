@@ -1,12 +1,16 @@
-.TH code64 1 "19 November 2019" "Version 1.0"
+.TH code64 1 "\n[year]-\n[mo]-\n[dy]" "Version 1.0"
 
 .SH NAME
-code64 Base64 Encoder/Decoder
+code64 - Base64 Encoder/Decoder
 
 .SH SYNOPSIS
+.SY
 .B code64
-.RI [ OPTIONS ] " " [ FILE ]
+.RI [ OPTIONS ]
+.RI [ filename ]
+.YS
 
+\# SECTION description
 .SH DESCRIPTION
 The \fBcode64\fR utility converts data to and from base64 encoding.
 
@@ -20,67 +24,79 @@ By default, the characters used for values 62 and 63 are '\fI+\fR'
 and '\fI/\fR', and the padding character is '\fI=\fR'.  These characters
 can be changed with options.
 
+\# SECTION overview
 .SH OVERVIEW
-The
-.Nm
-utility converts data to and from base64 encoding.  This encoding is
-widely used to transmit files and data over the internet.  During
-encoding, every 3 8-bit bytes of input is converted to 4 6-bit bytes
-of output.  The 6-bit variables represent values from 0 to 63, and
-these values are represented by two runs of the roman alphabet, first
-in upper case, then lower case, then the 10 numeric digits, 0-9.
+The \fBcode64\fR utility converts data to and from base64 encoding.  This
+encoding is widely used to transmit files and data over the internet.
+During encoding, every 3 8-bit bytes of input is converted to 4 6-bit
+bytes of output.  The 6-bit variables represent values from 0 to 63,
+and these values are represented by two runs of the roman alphabet,
+first in upper case, then lower case, then the 10 numeric digits, 0-9.
 This covers the first 62 possible values for a 6-bit value.  That
 leaves 2 values unaccounted-for, 62 and 63.
 
 In most cases, 62 and 63 are replaced with '\fI+\fR' and '\fI/\fR',
 but there are exceptions.  URLs, for example, have specific
 interpretations for the '\fI+\fR', which stands in for a space, and
-'\fI/\fR' which normally indicates directory hierachy.  
+'\fI/\fR' which normally indicates directory hierachy.
 
-
+\# SECTION options
 .SH OPTIONS
 .TP
-.BI -b " line break length "
-.br
+.BI -b " max_line_length"
+.RS
 Use this option to set the maximum line length of the encoded output.
 The value will be coerced to the highest multiple of 4 that is equal
 to or less than the requested line length.  A line break length of \fI0\fR
 will omit all line breaks in the output.  The default value is \fI76\fR.
-
+.RE
+\#
 .TP
 .BI -c " string"
-.br
+.RS
 This option will set the special characters for values 62 and 63 and
 for padding.  The string must be at least 2 characters long.  If the
 string is 3 characters long, the third character will be used as a
 padding character, if needed.  Otherwise, no padding will be used
-when the final encoding group is less than 3 bytes long.
-
+when the final encoding group is less than 3 bytes long.  See
+\fBSpecial Characters Warning\fR below.
+.EX
+\fBcode64 -c \fR '\fI+/=\fR'
+.RS
+Use '\fI+\fR' for 62, '\fI/\fR' for 63, and pad with '\fI=\fR'.
+.RE
+\fBcode64 -c \fR '\fI-_\fR'
+.RS
+Use '\fI-\fR' for 62, '\fI_\fR' for 63, and do not pad ending.
+.RE
+.EE
+.RE
+\#
 .TP
 .BI -d
 .br
 Decode the input file
-
+\#
 .TP
 .BI -e
 .br
 Encode the input file
-
+\#
 .TP
 .BI -h
 .br
 Present a short help page.
-
+\#
 .TP
 .BI -i " input_file"
 .br
 Read from \fIinput_file\fR for encoding input instead of \fIstdin\fR.
-
+\#
 .TP
 .BI -o " output_file"
 .br
 Write the encoded results to \fIoutput_file\fR instead of \fIstdout\fR.
-
+\#
 .TP
 .BI -s " standard_name"
 .br
@@ -89,7 +105,8 @@ break length based on the intended standard invoked.
 
 By default, \fBcode64\fR uses the \fIMIME\fR standard, using '\fI+\fR'
 and '\fI/\fR' for values 62 and 63, '\fI=\fR' for padding, and a
-maximum line length of 76 characters.
+maximum line length of 76 characters.  See \fISpecial Characters Warning\fR
+and \fIOnline Reference\fR below.
 
 The supported standards are:
 .br
@@ -110,15 +127,62 @@ The supported standards are:
 - y64
 .br
 - freenet
-
-
-
-
+\# SECTION examples
 .SH EXAMPLES
+\#
+.TP
+.BI code64 " spreadsheet.xls"
+Encode contents of file \fIspreadsheet.xls\fR and write to \fIstdout\fR.
+\#
+.TP
+\fBcode64 -o\fI spreadsheet.b64 spreadsheet.ods\fR
+Encode contents of \fIspreadsheet.ods\fR to \fIspreadsheet.b64\fR using
+the MIME variation.
+.TP
+\fBecho -n\fI spreadsheet.ods\fR | \fBcode64\fR > \fIspreadsheet.b64\fR
+Encode contents of \fIspreadsheet.ods\fR to \fIspreadsheet.b64\fR.
 
-.SH AUTHOR
+The same result as the previous example, but using pipes for input
+and output.  In this case, note that \fBecho\fR uses the \fB-n\fR
+option to omit the usual newline.  Otherwise, the newline character
+would be included in the encoded result.
+.TP
+.BI "bcode64 -d " spreadsheet.b64 " -o " spreadsheet.ods
+Decode contents of \fIspreadsheet.b64\fR to \fIspreadsheet.odx\fR.
+.TP
+.BI "bcode64 " spreadsheet.ods " -c " '#^=' " -b " 4
+Encode contents of \fIspreadsheet.ods\fR, using '\fI#\fR' for 62,
+'\fI^\fR' for 63, and '\fI=\fE' for padding, with 4 character lines
+for debugging translation blocks.  See \fBSpecial Characters Warning\fR below.
+\#
+\# SECTION notes
+.SH NOTES
+.SS Special Characters Warning
+The special characters in force during encoding must also be in force
+during decoding.  Otherwise, the unrecognized special characters will
+be ignored and the decoding will silently fail.
+
+This is meant to be a feature, that the unrecognized characters are
+ignored.  That's how multiple lines are treated as a single string.
+However, the silent failure of mismatched special characters may pose
+a greater problem.  It may be better to loudly fail in that case unless
+a flag is set to ignore unrecognized characters.
+
+.SS Online Reference
+The reference I used to code and test this utility is at
+.br
+.UR https://en.wikipedia.org/wiki/Base64
+.UE
+
+The page also includes a table of encoding variants, with different
+special characters, padding and line-length requirements.
+.br
+.UR https://en.wikipedia.org/wiki/Base64#Variants_summary_table
+.UE
+\#
+\# SECTION see also
 .SH SEE ALSO
 .TP
-.BR code64 (3), base64
+.BR code64(3) ", " base64
 
 
