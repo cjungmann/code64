@@ -117,12 +117,23 @@ size_t c64_decoding_length(const char *input)
 }
 
 /**
- * @brief Returns number of bytes needed to encode **input_size** bytes.
+ * @brief Returns number of bytes needed to create an encode buffer given *input_size* length input.
+ *
+ * The function adds space for string-terminating NULL, then rounds
+ * up, if necessary, to ensure space for rational casting to uint32_t*.
  */
-size_t c64_encode_chars_needed(size_t input_size)
+size_t c64_encode_required_buffer_length(size_t input_size)
 {
-   // Any overflow/remainder from x/3 requires another 4 chars if padding is included
-   return input_size/3*4 + ( input_size % 3 ? 4 : 0 );
+   // Precise required memory needed to encode *input_size* bytes
+   size_t bytes_needed = input_size / 3 * 4;
+
+   // Add one byte for string-terminating NULL:
+   ++bytes_needed;
+
+   // Round up to nearest 4-byte boundary
+   bytes_needed += (input_size % 3 ? 4 : 0);
+
+   return bytes_needed;
 }
 
 /**
@@ -232,7 +243,7 @@ int scan_but_skip_invalid(const char *input, char* buffer, size_t buffer_len)
  * @brief The function that does the actual encoding.
  *
  * @param input Pointer to chars
- * @param buff_var Pointer to an integer variable
+ * @param buff_var Pointer to an 32-bit unsigned integer variable
  * @return Cast the **buff_var** parameter to char* for return.
  *
  * This function reads up to 3 characters from **input**, writing the
@@ -290,7 +301,7 @@ const char *c64_encode_to_pointer(const char *input, int count, uint32_t *buff_v
 
 /**
  *
- * This function consumers **input** 4 characters at a time.
+ * This function consumes **input** 4 characters at a time.
  */
 int c64_decode_to_pointer(const char *input, uint32_t *buff_val)
 {
@@ -342,7 +353,7 @@ void c64_encode_to_callback(const char *input, size_t len_input, Encode_User use
    uint32_t *buffer = (uint32_t*)alloca(uint32_elements_needed * sizeof(uint32_t));
 
    const char *ptr_in = input;
-   const char *ptr_end = input + len_input;
+   const char *ptr_end = input + len_input / sizeof(uint32_t);
    uint32_t *ptr_out = buffer;
 
    while(ptr_in < ptr_end)
@@ -379,7 +390,14 @@ void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer,
    const char *in_end = input + len_input;
 
    uint32_t *ptr_out = buffer;
-   uint32_t *end_out = ptr_out + bufflen;
+
+   // Send end back 1 uint32_t (4 bytes) to ensure there
+   // is room for four bytes can be copied to the pointer.
+   uint32_t *end_out = ptr_out + bufflen - 1;
+
+   int byteslen = (char*)end_out - (char*)ptr_out;
+   if (byteslen)
+      byteslen = byteslen;
 
    while(ptr_in < in_end && ptr_out < end_out )
    {
@@ -395,7 +413,8 @@ void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer,
          break;
    }
 
-   *ptr_out = 0;
+   if (ptr_out < end_out)
+      *ptr_out = 0;
 }
 
 /**
