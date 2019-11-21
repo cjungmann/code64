@@ -1,3 +1,6 @@
+#ifndef CODE64_H
+#define CODE64_H
+
 #include <stdint.h>   // for uint34_t definition
 
 typedef void (*Encode_User)(const char *encoded_content);
@@ -10,7 +13,7 @@ void c64_set_special_chars(const char *special_chars);
 size_t c64_decoding_length(const char *input);
 
 /** Functions to predict memory requirements of encoding and decoding. */
-size_t c64_encode_chars_needed(size_t input_size);
+size_t c64_encode_required_buffer_length(size_t input_size);
 size_t c64_decode_chars_needed(size_t input_size);
 
 /** Functions to perform conversions of the smallest portion the input. */
@@ -26,3 +29,6 @@ void c64_encode_stream_to_stream(FILE *in, FILE *out, unsigned int breaks);
 void c64_decode_to_callback(const char *input, Decode_User user);
 void c64_decode_to_buffer(const char *input, char *buffer, size_t len);
 void c64_decode_stream_to_stream(FILE *in, FILE *out);
+
+
+#endif
