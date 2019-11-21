@@ -1,4 +1,4 @@
-// -*- compile-command: "cc -Wall -Werror -I . -L. -ggdb -o codetest codetest.c  -Wl,-R -Wl,. -lcode64" -*-
+// -*- compile-command: "cc -Wall -Werror -I . -L. -ggdb -o codetest codetest.c  -Wl,-R -Wl,. -lcode64d" -*-
 
 #include <stdio.h>
 #include <string.h>   // memset(), strerror()
@@ -36,6 +36,35 @@ void show_decoded_string(const void* result, size_t data_length)
    printf("The decoded result is [44;1m%.*s[m (%lu).\n\n", (int)data_length, quote, data_length);
 }
 
+/**
+ * @brief Demonstrate stack-based result WITHOUT using c64_encode_to_callback().
+ *
+ * This function demonstrates the heap-saving technique that can be
+ * used without the deprecated c64_encode_to_callback().
+ */
+void encode_to_callback(const char *input, size_t len_input, Encode_User callback)
+{
+   size_t len_encoded = c64_encode_required_buffer_length(len_input);
+   char *buffer = (char*)alloca(len_encoded);
+
+   c64_encode_to_buffer(input, len_input, (void*)buffer, len_encoded);
+   (*callback)(buffer);
+}
+
+/**
+ * @brief Demonstrate stack-based result WITHOUT using c64_decode_to_callback().
+ *
+ * This function demonstrates the heap-saving technique that can be
+ * used without the deprecated c64_decode_to_callback().
+ */
+void decode_to_callback(const char *input, Decode_User callback)
+{
+   size_t len_decoded = c64_decode_chars_needed(c64_decoding_length(input));
+   char *buffer = (char*)alloca(len_decoded);
+
+   c64_decode_to_buffer(input, buffer, len_decoded);
+   (*callback)(buffer, len_decoded);
+}
 
 /**
  * @brief Demonstration/example for direct use of the fundamental encoding function
@@ -45,7 +74,7 @@ void show_decoded_string(const void* result, size_t data_length)
 void explicit_conversion_demo(const char *str)
 {
    size_t len_input = strlen(str);
-   size_t encoding_len = c64_encode_chars_needed(len_input);
+   size_t encoding_len = c64_encode_required_buffer_length(len_input);
 
    uint32_t *buffer = (uint32_t*)alloca(encoding_len);
 
@@ -95,7 +124,7 @@ void prediction_test(void)
    printf("\n[33;1mBeginning prediction_test.[m\n");
    printf("encoding prediction: len_text %d, predicted %lu, actual %d.\n",
           len_quote,
-          c64_encode_chars_needed(len_quote),
+          c64_encode_required_buffer_length(len_quote),
           len_encoded);
 
    printf("[33;1mBEFORE[m adjustment: %d,  ", len_encoded);
@@ -115,19 +144,19 @@ void prediction_test(void)
 void test_decoding(void)
 {
    printf("Testing strings with end-padding for missing data.\n");
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3VyZS4=", show_decoded_string);
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3VyZQ==", show_decoded_string);
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string);
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3U=", show_decoded_string);
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhcw==", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhc3VyZS4=", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhc3VyZQ==", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhc3U=", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhcw==", show_decoded_string);
 
    printf("Testing strings WITHOUT end-padding for missing data.\n");
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhcw", show_decoded_string);
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3U", show_decoded_string);
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhcw", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhc3U", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string);
 
    printf("Testing decode of entire encoded leviathan quote.\n");
-   c64_decode_to_callback(buff_encoded, show_decoded_string);
+   decode_to_callback(buff_encoded, show_decoded_string);
 }
 
 void explicit_conversion_test(void)
@@ -201,7 +230,7 @@ void test_decode_chars_needed(void)
       memset((void*)decode_buffer, 0, sizeof(decode_buffer));
 
       len_input = c64_decoding_length(*ptr);
-      calc_encoded = c64_encode_chars_needed(len_input);
+      calc_encoded = c64_encode_required_buffer_length(len_input);
       c64_encode_to_buffer(*ptr, len_input, encode_buffer, sizeof(encode_buffer));
 
       len_encoded = strlen((const char*)encode_buffer);
@@ -257,10 +286,12 @@ void leviathan_quote_test(const char *result)
 void encode_to_buffer_test(const char *str)
 {
    size_t str_len = strlen(str);
-   size_t encoded_len = c64_encode_chars_needed(str_len);
+   size_t encoded_len = c64_encode_required_buffer_length(str_len);
    uint32_t *buffer = (uint32_t*)malloc(encoded_len);
 
-   printf("\n[33;1mBeginning encode_to_buffer_test with %lu-length buffer for a %lu-length string..[m\n", encoded_len, str_len);
+   printf("\n[33;1mBeginning encode_to_buffer_test with "
+          "%lu-length buffer for a %lu-length string..[m\n",
+          encoded_len, str_len);
 
    c64_encode_to_buffer(str, str_len, buffer, encoded_len);
 
@@ -273,12 +304,12 @@ void run_tests(void)
 {
    prediction_test();
    explicit_conversion_test();
-   c64_encode_to_callback(buff_quote, strlen(buff_quote), leviathan_quote_test);
+   encode_to_callback(buff_quote, strlen(buff_quote), leviathan_quote_test);
    encode_to_buffer_test(buff_quote);
 
    test_decode_chars_needed();
    test_decoding();
-   c64_decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string);
+   decode_to_callback("YW55IGNhcm5hbCBwbGVhc3Vy", show_decoded_string);
    test_allowing_invalid_encode_chars();
 
 }
