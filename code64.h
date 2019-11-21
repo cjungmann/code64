@@ -21,12 +21,10 @@ const char *c64_encode_to_pointer(const char *input, int count, uint32_t *buff_v
 int c64_decode_to_pointer(const char *input, uint32_t *buff_var);
 
 /** Encoding functions that convert the entire input **/
-void c64_encode_to_callback(const char *input, size_t len_input, Encode_User user);
 void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer, int bufflen);
 void c64_encode_stream_to_stream(FILE *in, FILE *out, unsigned int breaks);
 
 /** Decoding functions that convert the entire input **/
-void c64_decode_to_callback(const char *input, Decode_User user);
 void c64_decode_to_buffer(const char *input, char *buffer, size_t len);
 void c64_decode_stream_to_stream(FILE *in, FILE *out);
 

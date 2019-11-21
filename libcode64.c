@@ -338,45 +338,6 @@ int c64_decode_to_pointer(const char *input, uint32_t *buff_val)
 }
 
 /**
- * @brief Call the **user** callback function with encoded content.
- *
- * This function allocates stack memory for the encoding buffer,
- * calling the **user** callback function when the encoding is
- * complete.  When the callback function returns, the encoding
- * is discarded along with the rest of the stack memory, when
- * this function returns.
- */
-void c64_encode_to_callback(const char *input, size_t len_input, Encode_User user)
-{
-   size_t uint32_elements_needed = len_input / 3 + 2;
-
-   uint32_t *buffer = (uint32_t*)alloca(uint32_elements_needed * sizeof(uint32_t));
-
-   const char *ptr_in = input;
-   const char *ptr_end = input + len_input / sizeof(uint32_t);
-   uint32_t *ptr_out = buffer;
-
-   while(ptr_in < ptr_end)
-   {
-      int count = ptr_end - ptr_in;
-      if (count > 3)
-         count = 3;
-
-      const char *result = c64_encode_to_pointer(ptr_in, count, ptr_out);
-
-      ++ptr_out;
-      ptr_in += 3;
-
-      if (*result == 0)
-         break;
-   }
-
-   *ptr_out = 0;
-
-   (*user)((const char*)buffer);
-};
-
-/**
  * @brief Convenience function, call c64_encode_to_pointer to fill an allocated buffer.
  *
  * Use this function to encode input without using callbacks.
@@ -452,37 +413,6 @@ void c64_encode_stream_to_stream(FILE *in, FILE *out, unsigned int breaks)
 
       reading = 0;
    }
-}
-
-/**
- * @brief Decode encoded string to stack-based buffer, which is sent to callback function.
- */
-void c64_decode_to_callback(const char *input, Decode_User user)
-{
-   size_t in_len = c64_decoding_length(input);
-
-   const char *in_end = input + in_len;
-
-   size_t out_len = c64_decode_chars_needed(in_len);
-   char *out_buff = (char*)alloca(out_len);
-   char *out_ptr = out_buff;
-   uint32_t working;
-   char encoded_buffer[5];
-
-   const char *ptr = input;
-   while(ptr < in_end)
-   {
-      ptr += scan_but_skip_invalid(ptr, encoded_buffer, sizeof(encoded_buffer));
-
-      if (!c64_decode_to_pointer(encoded_buffer, &working))
-         break;
-
-      memcpy(out_ptr, (void*)&working, 3);
-
-      out_ptr += 3;
-   }
-
-   (*user)((const void*)out_buff, out_len);
 }
 
 /**
