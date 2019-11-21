@@ -19,26 +19,26 @@ debug : BASEFLAGS += -ggdb -DDEBUG
 .PHONY: all
 all : libcode64.so code64
 
-libcode64.so : libcode64.c libcode64.h
+libcode64.so : libcode64.c code64.h
 	$(CC) ${LIB_CFLAGS} -o libcode64.so libcode64.c
 
-code64 : code64.c libcode64.h
+code64 : code64.c code64.h
 	$(CC) ${BASEFLAGS} -L. -o code64 code64.c ${LOCAL_LINK}
 
-debug: libcode64.c libcode64.h code64.c codetest.c
+debug: libcode64.c code64.h code64.c codetest.c
 	$(CC) ${LIB_CFLAGS} -o libcode64d.so libcode64.c
 	$(CC) ${BASEFLAGS} -L. -o code64d code64.c $(LOCAL_LINK)d
 	$(CC) ${BASEFLAGS} -L. -o codetest codetest.c $(LOCAL_LINK)d
 
 install :
 	install -D --mode=755 libcode64.so /usr/lib
-	install -D --mode=755 libcode64.h  /usr/local/include
+	install -D --mode=755 code64.h     /usr/local/include
 	install -D --mode=755 code64       /usr/local/bin
 	$(call install_man_pages)
 
 uninstall :
 	rm -f /usr/lib/libcode64.so
-	rm -f /usr/local/include/libcode64.h
+	rm -f /usr/local/include/code64.h
 	rm -f /usr/local/bin/code64
 
 clean :

@@ -6,7 +6,7 @@
 
 #include <ctype.h>    // for isspace
 
-#include "libcode64.h"
+#include "code64.h"
 
 char digits[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

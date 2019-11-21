@@ -5,7 +5,7 @@
 #include <string.h>   // memset(), strerror()
 #include <errno.h>    // make available the global errno variable
 
-#include "libcode64.h"
+#include "code64.h"
 
 typedef struct _Std_Type
 {

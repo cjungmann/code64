@@ -6,7 +6,7 @@
 #include <alloca.h>
 #include <stdlib.h>   // for malloc()
 
-#include "libcode64.h"
+#include "code64.h"
 
 /**
  * The two following strings were copied from https://en.wikipedia.org/wiki/Base64.
