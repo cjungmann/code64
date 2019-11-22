@@ -1,18 +1,222 @@
-.TH code64 3 "19 November 2019" "Version 1.0"
+.TH code64 3 "19 November 2019" "Linux"
 .SH NAME
-libcode64 Base64 Encoder/Decoder Library
+libcode64 - Base64 Encoder/Decoder Library
 
 .SH SYNOPSIS
-.SY
-.EX
+.TP
 #include <code64.h>
-
-void c64_encode_to_callback(const char *input, size_t len_input, Encode_User user);
-void c64_encode_to_buffer(const char *input, size_t len_input, uint32_t *buffer, int bufflen);
-void c64_encode_stream_to_stream(FILE *in, FILE *out, unsigned int breaks);
-.EE
-.YS
+.TP
+.BI "size_t c64_encode_required_buffer_length(size_t " input_size );
+.TP
+.BI "size_t c64_decode_chars_needed(size_t " input_size );
+.TP
+.BI "size_t c64_decoding_length(const char* " input );
+.TP
+.BI "void c64_encode_to_buffer(const char* " input ", size_t " len_input ,
+.RS
+.BI "uint32_t* " buffer ", int " bufflen );
+.RE
+.TP
+.BI "void c64_decode_to_buffer(const char* " input ", char* " buffer ,
+.RS
+.BI "size_t " len );
+.RE
+.TP
+.BI "void c64_encode_stream_to_stream(FILE* " in ", FILE* " out ,
+.RS
+.BI "unsigned int " breaks );
+.RE
+.TP
+.BI "void c64_decode_stream_to_stream(FILE* " in ", FILE* " out );
+.TP
+.BI "void c64_set_special_chars(const char* " special_chars );
+.TP
+.BI "const char *c64_encode_to_pointer(const char* " input ", int " count ", uint32_t* " buff_var );
+.TP
+.BI "int c64_decode_to_pointer(const char* " input ", uint32_t* " buff_var );
 
 .SH DESCRIPTION
 \fBlibcode64.so\fR is a shared-object library that is used to
 encode and decode data using \fIbase64\fR encoding.
+
+.SH FUNCTIONS
+
+\# Functions Class
+.SS Predictive Functions
+These functions return information that helps a program
+determine how much memory will be needed to process in-memory
+coding and decoding.
+.TP
+.BI "size_t c64_encode_required_buffer_length(size_t " input_size );
+.br
+Returns the anticipated size, in bytes, needed to contain the
+encoded results a file or string that contains
+.I input_size
+bytes.
+.TP
+.BI "size_t c64_decode_chars_needed(size_t " input_size );
+.br
+Returns the number of bytes required to encode a file or
+string of
+.I input_size
+length.  
+.TP
+.BI "size_t c64_decoding_length(const char* " input );
+.br
+Returns the number of characters in the string, less the possible
+padding characters that may terminate the string.
+
+This function is of little value.  The possibility of other
+unrecognized characters that will be ignored, the value returned
+by this function will be the minimum possible length.  Its
+accuracy can only be up to a 2 character improvement over a
+simple
+.B strlen()
+call.
+\#
+\# Functions Class
+.SS In-memory Encoding/Decoding
+These functions translate bytes in one memory location to a
+buffer in another memory location.  
+.TP
+.BI "void c64_encode_to_buffer(const char* " input ", size_t " len_input ", uint32_t* " buffer ", int " bufflen );
+.br
+Parameters 
+.IR input " and " len_input
+describe the input data.  The
+.I len_input
+parameter is necessary in case the data in
+.I input
+are binary, legitimately including
+.B 0
+values that would otherwise terminate strings.
+.br
+Parameters
+.IR buffer " and " bufflen
+describe the buffer in which the encoded contents will be written.
+Use the predictive function
+.B c64_decoding_length
+to calculate the value of
+.I bufflen
+and to allocate the memory for
+.I buffer
+\&.
+
+.TP
+.BI "void c64_decode_to_buffer(const char* " input ", char* " buffer ", size_t " len );
+Encoded data is a string that is assumed to be terminated with a
+.I \0
+value.  Thus, there is no
+.I len_input
+parameter for this function.
+The parameters
+.IR buffer " and " len
+describe the buffer into which the decoded data will be written.
+
+\# Functions Class
+.SS File-based Encoding/Decoding
+These functions read from and write to FILE stream pointers.  These
+functions are used in the
+.B code64
+command line utility that is included in this project.
+
+.TP
+.BI "void c64_encode_stream_to_stream(FILE* " in ", FILE* " out ", unsigned int " breaks );
+For encoding, line lengths will be limited to no more than the value in the
+.I breaks
+parameter.  In practice, the line break length will be the highest multiple
+of 4 that is less than or equal to the value in
+.I breaks
+\&.
+.TP
+.BI "void c64_decode_stream_to_stream(FILE* " in ", FILE* " out );
+This function reads from
+.I in
+, decoding sets of four base64 characters into three binary bytes
+that are written to
+.I out
+\&.
+
+\# Functions Class
+.SS Output Modification Functions
+.TP
+.BI "void c64_set_special_chars(const char* " special_chars );
+.br
+Replace default special characters (
+.I +/=
+) with custom characters.  The single parameter should be a
+2- or 3-character string to set the representation of encoded values
+of 62 and 63 and (for the optional third character) the padding
+character.
+
+\# Functions Class
+.SS Low-level Functions
+These two functions are used repeatedly by both the stream and
+buffer function classes.  They translate minumim byte sets according
+to the direction of translating, by 3 bytes when encoding, and
+by 4 bytes when decoding.
+
+The higher-level functions documented above should be sufficient
+for most needs.  An example of using these low-level functions
+can be found in the included file
+.I codetest.c
+, function
+.I explicit_conversion_demo
+.TP
+.BI "const char *c64_encode_to_pointer(const char* " input ", int " count ", uint32_t* " buff_var );
+Since it's encoding, the input length is required in case the
+input buffer contains a binary 0.  This function returns the
+.I buff_var
+as a char pointer.
+.TP
+.BI "int c64_decode_to_pointer(const char* " input ", uint32_t* " buff_var );
+Encoded contents are always strings that are terminated with a \0, so the
+end of the input is obvious.  This function reads
+.I input
+by four characters at a time, translating the contents to an up-to-three
+byte result.
+
+
+.SH EXAMPLE
+.PP
+The following program demonstrates how to use buffer-based functions.  The 
+stream functions mainly support the
+.B code64
+application.
+.SS Program Code
+.EX
+/* file name c64demo.c */
+#include <stdio.h>    /* for printf() */
+#include <string.h>   /* for strlen() */
+#include <stdlib.h>   /* for malloc(), free() */
+
+#include <code64.h>
+
+int main(int argc, const char** argv)
+{
+   if (argc < 2)
+   {
+      printf("This program requires a string to encode.\n");
+      return 1;
+   }
+
+   const char *strvalue = argv[1];
+   size_t len_input = strlen(strvalue);
+   size_t len_buffer = c64_encode_required_buffer_length(len_input);
+   uint32_t *buffer = (uint32_t*)malloc(len_buffer);
+
+   c64_encode_to_buffer(strvalue, len_input, buffer, len_buffer);
+
+   printf("The encoded value of \\"%s\\" is \\"%s\\".\\n", strvalue, (const char*)buffer);
+
+   free(buffer);
+
+   return 0;
+}
+.EE
+.PP
+Compile the previous code with the following command:
+cc -o c64demo c64demo.c -lcode64
+.SH SEE ALSO
+.TP
+.BR code64 "(1), " base64 (1)
