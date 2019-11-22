@@ -2,7 +2,6 @@
 #include <string.h>   // for strlen
 #include <stdint.h>   // for uint64_t, etc.
 #include <assert.h>
-#include <alloca.h>
 
 #include <ctype.h>    // for isspace
 
