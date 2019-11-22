@@ -91,7 +91,7 @@ void explicit_conversion_demo(const char *str)
    {
       int count = ptr_end - ptr_in;
       if (count > 3)
-         count = 0;
+         count = 3;
 
       const char *result = c64_encode_to_pointer(ptr_in, count, ptr_out);
 
@@ -104,7 +104,7 @@ void explicit_conversion_demo(const char *str)
 
    *ptr_out = 0;
 
-   printf("[32;1m%s[m\n", (const char*)buffer);
+   printf("Converted [32;1m%s[m to [32;1m%s[m\n", str, (const char*)buffer);
 }
 
 
