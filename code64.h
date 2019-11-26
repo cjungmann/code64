@@ -1,7 +1,9 @@
 #ifndef CODE64_H
 #define CODE64_H
 
-#include <stdint.h>   // for uint34_t definition
+#include <stdint.h>    // for uint34_t definition
+#include <stdio.h>     // for FILE*
+#include <sys/types.h> // for size_t
 
 typedef void (*Encode_User)(const char *encoded_content);
 typedef void (*Decode_User)(const void *decoded_content, size_t data_length);
