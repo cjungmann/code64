@@ -121,7 +121,7 @@ size_t c64_decoding_length(const char *input)
  * The function adds space for string-terminating NULL, then rounds
  * up, if necessary, to ensure space for rational casting to uint32_t*.
  */
-size_t c64_encode_required_buffer_length(size_t input_size)
+size_t c64_encode_chars_needed(size_t input_size)
 {
    // Precise required memory needed to encode *input_size* bytes
    size_t bytes_needed = input_size / 3 * 4;

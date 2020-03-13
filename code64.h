@@ -15,8 +15,10 @@ void c64_set_special_chars(const char *special_chars);
 size_t c64_decoding_length(const char *input);
 
 /** Functions to predict memory requirements of encoding and decoding. */
-size_t c64_encode_required_buffer_length(size_t input_size);
+size_t c64_encode_chars_needed(size_t input_size);
 size_t c64_decode_chars_needed(size_t input_size);
+
+size_t c64_encode_required_buffer_length(size_t input_size) { return c64_encode_chars_needed(input_size); }
 
 /** Functions to perform conversions of the smallest portion the input. */
 const char *c64_encode_to_pointer(const char *input, int count, uint32_t *buff_var);
